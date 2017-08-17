@@ -87,4 +87,17 @@ class process:
                     self.columns.append(i.strip('()'))
 
 
-    # def process_where(self):
+    def process_where(self):
+        self.clauses[1] = oth.format_string(self.clauses[1])
+
+        if len(self.columns) == 1 and self.columns[0] == '*':
+            self.columns = self.dict[self.tables[0]]
+        print oth.print_header(self.tables[0], self.columns)
+        for row in self.tables_data[self.tables[0]]:
+            evaluator = oth.generate_eval(self.clauses[1], self.tables[0], self.dict, row)
+            ans = ''
+            if eval(evaluator):
+                for column in self.columns:
+                    ans += row[self.dict[self.tables[0]].index(column)] + ','
+                    fl = True
+                print ans.strip(',')

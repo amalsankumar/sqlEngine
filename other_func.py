@@ -21,3 +21,56 @@ class other_func:
         except IOError:
             sys.exit('No file was provided for the given table: \'' + table_name + '\'')
         return data
+
+    def print_header(self,table_name, columns):
+        string = ''
+        for column in columns:
+            if string != '':
+                string += ','
+            string += table_name + '.' + column
+        return string
+
+    def search_col(self, column, tables, dict):
+        #searches reqd cols in the given tables
+        if '.' in column:
+            table, column = column.split('.')
+            table = self.format_string(table)
+            column = self.format_string(column)
+            if table not in tables:
+                sys.exit('No table as \'' + table + '\' exists')
+            return table, column
+        f = 0
+        table_needed = ''
+        for table in tables:
+            if column in dict[table]:
+                f += 1
+                if f > 1:
+                    sys.exit('Invalid column name \'' + column + '\' given')
+                table_needed = table
+        if f == 0:
+            sys.exit('No such column as \'' + column + '\' found')
+        return table_needed, column
+
+
+    def generate_eval(self, condition, table, table_info, data):
+        #returns evaluation of each row to see if it matches the condition
+        condition = condition.split(' ')
+        evaluator = ''
+        for i in condition:
+            i = self.format_string(i)
+            if '.' in i:
+                table_cur, column = self.search_col(i, [table], table_info)
+                if table_cur != table:
+                    sys.exit('Table \'' + table_cur + '\' not found')
+                elif column not in table_info[table]:
+                    sys.exit('No such column as \'' + column + '\' found in \'' + table_cur + '\' is given')
+                evaluator += data[table_info[table_cur].index(column)]
+            elif i == '=':
+                evaluator += i*2
+            elif i.lower() == 'and' or i.lower() == 'or':
+                evaluator += ' ' + i.lower() + ' '
+            elif i in table_info[table]:
+                evaluator += data[table_info[table].index(i)]
+            else:
+                evaluator += i
+        return evaluator    
