@@ -59,7 +59,7 @@ class process:
         if len(self.distinct_process) != 0 and len(self.fn_process) != 0:
             sys.exit('Distinct and aggregate fns cant be given at the same time')
         if len(self.clauses) > 1 and len(self.tables) == 1: #where condn on a single tables
-            process_where()
+            self.process_where()
 
 
 
