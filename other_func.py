@@ -93,3 +93,60 @@ class other_func:
                 tables_needed.append(table)
             cols_in_table[table].append(column)
         return cols_in_table, tables_needed
+
+
+    def join_needed_data(self, operator, tables, reqd_data, tables_data):
+        #Joins the data needed for where clause
+        if operator == 'and':
+            return self.join_data_and(tables, reqd_data)
+        elif operator == 'or':
+            return self.join_data_or(tables, reqd_data, tables_data)
+        else:
+            return self.join_data_single(tables, reqd_data, tables_data)
+
+
+    def join_data_and(self, tables, reqd_data):
+        #Join of data if the operator is AND
+        data_final = []
+        table1 = self.format_string(tables[0])
+        table2 = self.format_string(tables[1])
+        for i in reqd_data[table1]:
+            for j in reqd_data[table2]:
+                data_final.append(i + j)
+
+        return data_final
+
+
+    def join_data_or(self, tables, reqd_data, tables_data):
+        #Joins the data when the operator ins OR
+        data_final = []
+        table1 = self.format_string(tables[0])
+        table2 = self.format_string(tables[1])
+        for i in reqd_data[table1]:
+            for j in tables_data[table2]:
+                if j not in reqd_data[table2]:
+                    data_final.append(i + j)
+        for i in reqd_data[table2]:
+            for j in tables_data[table1]:
+                if j not in reqd_data[table1]:
+                    data_final.append(j + i)
+
+        return data_final
+
+    def join_data_single(self, tables, reqd_data, tables_data):
+        #Joins the data when there is no AND/OR operator
+        data_final = []
+        table1 = reqd_data.keys()[0]
+        flg = False
+        table2 = tables[1]
+        if table1 == tables[1]:
+            table2 = tables[0]
+            flg = True
+        for i in reqd_data[table1]:
+            for j in tables_data[table2]:
+                if not flg:
+                    data_final.append(j + i)
+                else:
+                    data_final.append(i + j)
+
+        return data_final 
