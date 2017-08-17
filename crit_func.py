@@ -58,10 +58,12 @@ class process:
 
         if len(self.distinct_process) != 0 and len(self.fn_process) != 0:
             sys.exit('Distinct and aggregate fns cant be given at the same time')
-        if len(self.clauses) > 1 and len(self.tables) == 1: #where condn on a single tables
+        if len(self.clauses) > 1 and len(self.tables) == 1:
+            #where condn on a single table
             self.process_where()
-
-
+        elif len(clauses) > 1 and len(tables) > 1:
+            #multiple table where condition
+            self.process_multiple_where()
 
 
     def process_select(self):
@@ -101,3 +103,65 @@ class process:
                     ans += row[self.dict[self.tables[0]].index(column)] + ','
                     fl = True
                 print ans.strip(',')
+
+
+    def process_multiple_where(self):
+        self.clauses[1] = oth.format_string(self.clauses[1])
+        phrase = self.clause[1]
+        logical_operators = ['<', '>', '=']
+        operator = ''
+
+        if 'or' in self.clauses[1]:
+            self.clauses[1] = self.clauses.split('or')
+            operator = 'or'
+        elif 'and' in self.clauses[1]:
+            self.clauses[1] = self.clauses.split('and')
+            operator = 'and'
+        else:
+            self.clauses[1] = [self.clauses[1]]
+        if len(self.clauses[1]) > 2:
+            sys.exit('At max only one AND clause canbe given')
+
+        condition1 = (self.clauses[1])[0]
+        for i in logical_operators:
+            if i in condition1:
+                condition1 = condition1.split(i)
+        if len(condition1) == 2 and '.' in condition1[1]:
+            self.process_where_join([self.clauses[1], operator])
+
+
+    def process_where_join(self, clauses):
+        #Processes where condition with join condition
+        reqd_data = {}
+        fail_data = {}
+        operators = ['<', '>', '=']
+        for i in clauses[0]:
+            reqd = []
+            operator = ''
+            i = oth.format_string(i)
+            for op in operators:
+                if op in i:
+                    reqd = i.split(op)
+                    operator = op
+                    if operator == '=':
+                        oper *= 2
+                    break
+            if len(reqd) > 2:
+                sys.exit('Error occured in where condition')
+            col_condn, table_condn = oth.get_tables_col(reqd, self.tables, self.dict)
+            table1 = self.tables[0]
+            table2 = self.tables[1]
+            col1 = self.dict[table1].index(col_condn[table1][0])
+            col2 = self.dict[table2].index(col_condn[table2][0])
+            reqd_data[i] = []
+            reqd_data[i] = []
+            for data in tables_data[table1]:
+                for row in tables_data[table2]:
+                    evaluator = data[col1] + operator + row[col2]
+                    if eval(evaluator):
+                        reqd_data[i].append(data + row)
+                    else:
+                        fail_data[i].append(data + row)
+
+        if clauses[1] != '':
+            join_data = oth.join_needed_data(clauses[1], clauses[0], reqd_data, fail_data)

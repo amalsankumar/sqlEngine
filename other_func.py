@@ -73,4 +73,23 @@ class other_func:
                 evaluator += data[table_info[table].index(i)]
             else:
                 evaluator += i
-        return evaluator    
+        return evaluator
+
+
+    def get_tables_col(self, columns, tables, table_info):
+        #To select the reqd tables and corresponding columns
+        cols_in_table = {}
+        tables_needed = []
+        if len(columns) == 1 and columns[0] == '*':
+            for table in tables:
+                cols_in_table[table] = []
+                for column in table_info[table]:
+                    cols_in_table[table].append(column)
+            return cols_in_table, tables
+        for column in columns:
+            table, column = self.search_col(column, tables, table_info)
+            if table not in cols_in_table.keys():
+                cols_in_table[table] = []
+                tables_needed.append(table)
+            cols_in_table[table].append(column)
+        return cols_in_table, tables_needed
