@@ -51,19 +51,26 @@ class process:
         self.required_attr = before_from[len('select '):]
         self.required_attr = oth.format_string(self.required_attr)
         self.required_attr = self.required_attr.split(',')
-
+        self.columns = []
         self.process_select()
+
         if len(self.columns) + len(self.distinct_process) + len(self.fn_process) < 1:
             sys.exit('Nothing is given to select')
 
         if len(self.distinct_process) != 0 and len(self.fn_process) != 0:
             sys.exit('Distinct and aggregate fns cant be given at the same time')
+        if len(self.clauses) == 1 and len(self.tables) == 1 and len(self.fn_process) == 0:
+            #for queries having * or a single column
+            self.process_select_star()
         if len(self.clauses) > 1 and len(self.tables) == 1:
             #where condn on a single table
             self.process_where()
-        elif len(clauses) > 1 and len(tables) > 1:
+        elif len(self.clauses) > 1 and len(self.tables) > 1:
             #multiple table where condition
             self.process_multiple_where()
+        elif len(self.fn_process) != 0:
+            self.process_agg()
+
 
 
     def process_select(self):
@@ -89,6 +96,19 @@ class process:
                     self.columns.append(i.strip('()'))
 
 
+    def process_select_star(self):
+        if len(self.columns) == 1 and self.columns[0] == '*':
+            self.columns = self.dict[self.tables[0]]
+        print self.columns
+        print oth.print_header(self.tables[0], self.columns)
+        for row in self.tables_data[self.tables[0]]:
+            ans = ''
+            for column in self.columns:
+                ans += row[self.dict[self.tables[0]].index(column)] + ','
+                fl = True
+            print ans.strip(',')
+
+
     def process_where(self):
         self.clauses[1] = oth.format_string(self.clauses[1])
 
@@ -107,7 +127,7 @@ class process:
 
     def process_multiple_where(self):
         self.clauses[1] = oth.format_string(self.clauses[1])
-        phrase = self.clause[1]
+        phrase = self.clauses[1]
         logical_operators = ['<', '>', '=']
         operator = ''
 
@@ -128,6 +148,8 @@ class process:
                 condition1 = condition1.split(i)
         if len(condition1) == 2 and '.' in condition1[1]:
             self.process_where_join([self.clauses[1], operator])
+            return
+        self.process_special_where(phrase)
 
 
     def process_where_join(self, clauses):
@@ -165,4 +187,68 @@ class process:
 
         if clauses[1] != '':
             join_data = oth.join_needed_data(clauses[1], clauses[0], reqd_data, fail_data)
-        
+        else:
+            join_data = []
+            for i in reqd_data.keys():
+                for j in reqd_data[i]:
+                    join_data.append(j)
+        self.columns, self.tables = oth.get_tables_col(self.columns, self.tables, self.dict)
+        oth.output(self.tables, self.columns, self.dict, join_data, True)
+
+
+    def process_special_where(self, sentence):
+        condition = []
+        operator = ''
+        if 'and' in sentence.lower().split():
+            operator = 'and'
+            condition = sentence.split('and')
+        elif 'or' in sentence.lower().split():
+            operator = 'or'
+            condition = sentence.lower().split('or')
+        else:
+            condition = [sentence]
+        reqd_data = oth.get_reqd_data(condition, self.tables, self.tables_data, self.dict)
+        cols_in_table, tables_needed = oth.get_tables_col(self.columns, self.tables, self.dict)
+        join_data = oth.join_needed_data(operator, tables_needed, reqd_data, self.tables_data)
+        oth.output(tables_needed, cols_in_table, self.dict, join_data, True)
+
+
+    def process_agg(self):
+        #for agg fns
+        header = ''
+        result = ''
+        for query in self.fn_process:
+            fn_name = query[0]
+            column_name = query[1]
+            table = ''
+            col = ''
+            if '.' in column_name:
+                table, col = column_name.split('.')
+            else:
+                count = 0
+                for i in self.tables:
+                    if column_name in self.dict[i]:
+                        table = i
+                        col = column_name
+                        count += 1
+                if count == 0:
+                    sys.exit('No such column \'' + column_name + '\' found')
+                elif count > 1:
+                    sys.exit('Ambiguous column name \'' + column_name + '\' given')
+            data = []
+            header += table + '.' + col + ','
+            for row in self.tables_data[table]:
+                data.append(int(row[self.dict[table].index(col)]))
+
+            if fn_name.lower() == 'min':
+                result += str(min(data))
+            elif fn_name.lower() == 'max':
+                result += str(max(data))
+            elif fn_name.lower() == 'sum':
+                result += str(sum(data))
+            elif fn_name.lower() == 'avg':
+                result += str(float(sum(data)) / len(data))
+            result += ','
+        header.strip(',')
+        print header
+        print result

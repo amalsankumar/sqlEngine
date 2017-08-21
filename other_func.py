@@ -149,4 +149,68 @@ class other_func:
                 else:
                     data_final.append(i + j)
 
-        return data_final 
+        return data_final
+
+
+    def get_reqd_data(self, condition, tables, tables_data, table_info):
+        operators = ['<', '>', '=']
+        reqd_data = {}
+        for i in condition:
+            reqd = []
+            for operator in operators:
+                if operator in i:
+                    reqd = i.split(operator)
+                    break
+            if len(reqd) != 2:
+                sys.exit('Syntax ERROR: In where clause')
+            table, column = self.search_col(self.format_string(reqd[0]), tables, table_info)
+            reqd_data[table] = []
+            i = i.replace(reqd[0], ' ' + column + ' ')
+            for data in tables_data[table]:
+                evaluator = self.generate_eval(i, table, table_info, data)
+                try:
+                    if eval(evaluator):
+                        reqd_data[table].append(data)
+                except NameError:
+                    sys.exit('AND cant be used in JOIN queries')
+        return reqd_data
+
+
+    def join_needed_data(operator, tables, needed_data, tables_data):
+        #Joins the data needed for where clauses
+        if operator == 'or':
+            return join_data_or(tables, needed_data, tables_data)
+        elif operator == 'and':
+            return join_data_and(tables, needed_data)
+        else:
+            return join_data_single(tables, needed_data, tables_data)
+
+
+    # def join_needed_data_and(tables, needed_data):
+
+
+
+
+    def output(self, tables_needed, cols_in_table, table_info, tables_data, join):
+        if join:
+            table1 = tables_needed[0]
+            table2 = tables_needed[1]
+            header1 = self.print_header(table1, cols_in_table[table1])
+            header2 = self.print_header(table2, cols_in_table[table2])
+            print header + ',' + header2
+            for i in tables_data:
+                ans = ''
+                for col in cols_in_table[table1]:
+                    ans += i[table_info[table1].index(col)]
+                for col in cols_in_table[table2]:
+                    ans += i[table_info[table2].index(col) + len(table_info[table1])] + ','
+                print ans.strip(',')
+        else:
+            for table in tables_needed:
+                print self.print_header(table, cls_in_table[table])
+                for data in tables_data[table]:
+                    ans = ''
+                    for col in cols_in_table[table]:
+                        ans += data[table_info[table].index(col)] + ','
+                    print ans.strip(',')
+                print
