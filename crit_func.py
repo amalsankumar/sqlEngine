@@ -4,7 +4,7 @@ import csv
 from other_func import *
 
 oth = other_func()
-FUNCS = ['disticnt', 'sum', 'max', 'avg', 'min']
+FUNCS = ['distinct', 'sum', 'max', 'avg', 'min']
 
 class process:
 
@@ -59,9 +59,13 @@ class process:
 
         if len(self.distinct_process) != 0 and len(self.fn_process) != 0:
             sys.exit('Distinct and aggregate fns cant be given at the same time')
-        if len(self.clauses) == 1 and len(self.tables) == 1 and len(self.fn_process) == 0:
+        if len(self.clauses) == 1 and len(self.tables) == 1 and len(self.fn_process) == 0 and len(self.distinct_process) == 0:
             #for queries having * or a single column
             self.process_select_star()
+        if len(self.distinct_process) == 1 and len(self.tables) == 1:
+            self.process_distinct()
+        if len(self.distinct_process) > 1 and len(self.tables) == 1:
+            self.process_multiple_distinct()
         if len(self.clauses) > 1 and len(self.tables) == 1:
             #where condn on a single table
             self.process_where()
@@ -211,6 +215,42 @@ class process:
         cols_in_table, tables_needed = oth.get_tables_col(self.columns, self.tables, self.dict)
         join_data = oth.join_needed_data(operator, tables_needed, reqd_data, self.tables_data)
         oth.output(tables_needed, cols_in_table, self.dict, join_data, True)
+
+
+    def process_distinct(self):
+        #To process queries which has distinct
+        data = []
+        table_needed, col = oth.search_col(self.distinct_process[0], self.tables, self.dict)
+        print table_needed + '.' + col,
+        print
+        rem_data = []
+
+        for i in self.tables_data[table_needed]:
+            # print i
+            val = i[self.dict[table_needed].index(self.distinct_process[0])]
+            # print val
+            temp_data = []
+            if val not in data:
+                data.append(val)
+                print val,
+                for j in self.columns:
+                    temp_data.append(i[self.dict[table_needed].index(j)])
+                    print i[self.dict[table_needed].index(j)],
+                print
+                rem_data.append(temp_data)
+
+
+    def process_multiple_distinct(self):
+        # print 'Hello'
+        data = []
+        for i in self.distinct_process:
+            table_needed, col = oth.search_col(i, self.tables, self.dict)
+            for j in self.tables_data[table_needed]:
+                val = j[self.dict[table_needed].index(i)]
+                if val not in data:
+                    data.append(val)
+                    print val
+                # print
 
 
     def process_agg(self):
