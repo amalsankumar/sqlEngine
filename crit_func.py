@@ -72,6 +72,8 @@ class process:
         elif len(self.clauses) > 1 and len(self.tables) > 1:
             #multiple table where condition
             self.process_multiple_where()
+        elif len(self.tables) > 1:
+            self.process_join()
         elif len(self.fn_process) != 0:
             self.process_agg()
 
@@ -130,28 +132,29 @@ class process:
 
 
     def process_multiple_where(self):
-        self.clauses[1] = oth.format_string(self.clauses[1])
-        phrase = self.clauses[1]
+        condition = self.clauses[1]
+        condition = oth.format_string(condition)
+        phrase = condition
         logical_operators = ['<', '>', '=']
         operator = ''
 
-        if 'or' in self.clauses[1]:
-            self.clauses[1] = self.clauses.split('or')
+        if 'or' in condition:
+            condition = condition.split('or')
             operator = 'or'
-        elif 'and' in self.clauses[1]:
-            self.clauses[1] = self.clauses.split('and')
+        elif 'and' in condition:
+            condition = condition.split('and')
             operator = 'and'
         else:
-            self.clauses[1] = [self.clauses[1]]
-        if len(self.clauses[1]) > 2:
-            sys.exit('At max only one AND clause canbe given')
+            condition = [condition]
+        if len(condition) > 2:
+            sys.exit('At max only one AND clause can be given')
 
-        condition1 = (self.clauses[1])[0]
+        condition1 = condition[0]
         for i in logical_operators:
             if i in condition1:
                 condition1 = condition1.split(i)
         if len(condition1) == 2 and '.' in condition1[1]:
-            self.process_where_join([self.clauses[1], operator])
+            self.process_where_join([condition, operator])
             return
         self.process_special_where(phrase)
 
@@ -170,7 +173,7 @@ class process:
                     reqd = i.split(op)
                     operator = op
                     if operator == '=':
-                        oper *= 2
+                        operator *= 2
                     break
             if len(reqd) > 2:
                 sys.exit('Error occured in where condition')
@@ -179,10 +182,10 @@ class process:
             table2 = self.tables[1]
             col1 = self.dict[table1].index(col_condn[table1][0])
             col2 = self.dict[table2].index(col_condn[table2][0])
+            fail_data[i] = []
             reqd_data[i] = []
-            reqd_data[i] = []
-            for data in tables_data[table1]:
-                for row in tables_data[table2]:
+            for data in self.tables_data[table1]:
+                for row in self.tables_data[table2]:
                     evaluator = data[col1] + operator + row[col2]
                     if eval(evaluator):
                         reqd_data[i].append(data + row)
@@ -208,10 +211,12 @@ class process:
             condition = sentence.split('and')
         elif 'or' in sentence.lower().split():
             operator = 'or'
-            condition = sentence.lower().split('or')
+            condition = sentence.split('or')
         else:
             condition = [sentence]
+        print condition
         reqd_data = oth.get_reqd_data(condition, self.tables, self.tables_data, self.dict)
+        print 'Hello'
         cols_in_table, tables_needed = oth.get_tables_col(self.columns, self.tables, self.dict)
         join_data = oth.join_needed_data(operator, tables_needed, reqd_data, self.tables_data)
         oth.output(tables_needed, cols_in_table, self.dict, join_data, True)
@@ -292,3 +297,19 @@ class process:
         header.strip(',')
         print header
         print result
+
+
+    def process_join(self):
+        #For join type queries without where
+        cols_in_table, tables_needed = oth.get_tables_col(self.columns, self.tables, self.dict)
+        join_data = []
+
+        if len(tables_needed) == 2:
+            t1 = tables_needed[0]
+            t2 = tables_needed[1]
+            for i in self.tables_data[t1]:
+                for j in self.tables_data[t2]:
+                    join_data.append(i + j)
+            oth.output(tables_needed, cols_in_table, self.dict, join_data, join = True)
+        else:
+            oth.output(tables_needed, cols_in_table, self.dict, join_data, join = False)

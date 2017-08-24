@@ -5,6 +5,7 @@ import csv
 class other_func:
     def __init__(self):
         pass
+
     def format_string(self, string):
         return (re.sub(' +', ' ', string)).strip()
 
@@ -94,7 +95,6 @@ class other_func:
             cols_in_table[table].append(column)
         return cols_in_table, tables_needed
 
-
     def join_needed_data(self, operator, tables, reqd_data, tables_data):
         #Joins the data needed for where clause
         if operator == 'and':
@@ -176,41 +176,26 @@ class other_func:
         return reqd_data
 
 
-    def join_needed_data(operator, tables, needed_data, tables_data):
-        #Joins the data needed for where clauses
-        if operator == 'or':
-            return join_data_or(tables, needed_data, tables_data)
-        elif operator == 'and':
-            return join_data_and(tables, needed_data)
-        else:
-            return join_data_single(tables, needed_data, tables_data)
-
-
-    # def join_needed_data_and(tables, needed_data):
-
-
-
-
     def output(self, tables_needed, cols_in_table, table_info, tables_data, join):
         if join:
             table1 = tables_needed[0]
             table2 = tables_needed[1]
             header1 = self.print_header(table1, cols_in_table[table1])
             header2 = self.print_header(table2, cols_in_table[table2])
-            print header + ',' + header2
+            print header1 + ',' + header2
             for i in tables_data:
                 ans = ''
                 for col in cols_in_table[table1]:
-                    ans += i[table_info[table1].index(col)]
+                    ans += i[table_info[table1].index(col)] + ','
                 for col in cols_in_table[table2]:
                     ans += i[table_info[table2].index(col) + len(table_info[table1])] + ','
                 print ans.strip(',')
         else:
             for table in tables_needed:
-                print self.print_header(table, cls_in_table[table])
+                print self.print_header(table, cols_in_table[table])
                 for data in tables_data[table]:
                     ans = ''
                     for col in cols_in_table[table]:
                         ans += data[table_info[table].index(col)] + ','
-                    print ans.strip(',')
+                    print ans.strip(',') + ' '
                 print
