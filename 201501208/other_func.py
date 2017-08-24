@@ -86,15 +86,6 @@ class other_func:
                 cols_in_table[table] = []
                 for column in table_info[table]:
                     cols_in_table[table].append(column)
-            l = cols_in_table['table2']
-            r = cols_in_table['table1']
-            x = []
-            for i in l:
-                if i not in r:
-                    x.append(i)
-            cols_in_table['table2'] = x        
-            print l
-            print cols_in_table
             return cols_in_table, tables
         for column in columns:
             table, column = self.search_col(column, tables, table_info)

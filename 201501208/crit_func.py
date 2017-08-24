@@ -117,6 +117,7 @@ class process:
 
     def process_where(self):
         self.clauses[1] = oth.format_string(self.clauses[1])
+
         if len(self.columns) == 1 and self.columns[0] == '*':
             self.columns = self.dict[self.tables[0]]
         print oth.print_header(self.tables[0], self.columns)
